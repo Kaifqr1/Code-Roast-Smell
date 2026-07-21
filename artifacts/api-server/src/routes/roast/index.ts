@@ -9,7 +9,6 @@ import { RoastCodeBody, RoastCodeResponse } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
-// System prompt that instructs the LLM to return a structured JSON roast
 const SYSTEM_PROMPT = `You are a brilliantly savage but secretly kind code reviewer.
 Your job is to roast the code you're given — be witty, specific, and funny, but never cruel.
 Always respond with valid JSON matching this exact shape:
@@ -34,7 +33,6 @@ Be specific — reference actual variable names, patterns, or structures from th
 Return ONLY the JSON object, no markdown fences, no extra text.`;
 
 router.post("/roast", async (req, res): Promise<void> => {
-  // Validate request body
   const parsed = RoastCodeBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -48,12 +46,11 @@ router.post("/roast", async (req, res): Promise<void> => {
     return;
   }
 
-  // Check for API key
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     res.status(503).json({
       error:
-        "Gemini API key not configured. Add GEMINI_API_KEY to your Replit Secrets to enable roasting. Get a key at aistudio.google.com.",
+        "Gemini API key not configured. Add GEMINI_API_KEY to your Replit Secrets. Get a key at aistudio.google.com.",
     });
     return;
   }
@@ -64,19 +61,33 @@ router.post("/roast", async (req, res): Promise<void> => {
 
   const userMessage = `Please roast the following ${language} code:\n\n\`\`\`${language}\n${code}\n\`\`\``;
 
-  const response = await ai.models.generateContent({
-    model: "gemini-2.0-flash",
-    config: {
-      systemInstruction: SYSTEM_PROMPT,
-      maxOutputTokens: 8192,
-      responseMimeType: "application/json",
-    },
-    contents: [{ role: "user", parts: [{ text: userMessage }] }],
-  });
+  let rawText: string;
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.0-flash",
+      config: {
+        systemInstruction: SYSTEM_PROMPT,
+        maxOutputTokens: 8192,
+        responseMimeType: "application/json",
+      },
+      contents: [{ role: "user", parts: [{ text: userMessage }] }],
+    });
+    rawText = response.text ?? "";
+  } catch (err: any) {
+    const status = err?.status ?? err?.code;
+    if (status === 429 || String(err?.message).includes("RESOURCE_EXHAUSTED")) {
+      req.log.warn("Gemini quota exhausted");
+      res.status(429).json({
+        error:
+          "Your Gemini API key has hit its free-tier quota limit. Enable billing on your Google AI project at aistudio.google.com to continue.",
+      });
+      return;
+    }
+    req.log.error({ err }, "Gemini API error");
+    res.status(502).json({ error: "Gemini API returned an error. Try again shortly." });
+    return;
+  }
 
-  const rawText = response.text ?? "";
-
-  // Parse JSON from LLM output
   let parsed_result: unknown;
   try {
     parsed_result = JSON.parse(rawText.trim());
@@ -86,7 +97,6 @@ router.post("/roast", async (req, res): Promise<void> => {
     return;
   }
 
-  // Validate against our response schema
   const validated = RoastCodeResponse.safeParse(parsed_result);
   if (!validated.success) {
     req.log.error({ errors: validated.error.message }, "LLM JSON schema mismatch");
