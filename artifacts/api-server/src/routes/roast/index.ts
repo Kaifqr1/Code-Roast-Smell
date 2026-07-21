@@ -1,10 +1,10 @@
 /**
  * POST /roast
- * Accepts a code snippet and language, calls the Anthropic API,
+ * Accepts a code snippet and language, calls the Gemini API,
  * and returns a structured roast result.
  */
 import { Router, type IRouter } from "express";
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenAI } from "@google/genai";
 import { RoastCodeBody, RoastCodeResponse } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -49,42 +49,39 @@ router.post("/roast", async (req, res): Promise<void> => {
   }
 
   // Check for API key
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     res.status(503).json({
       error:
-        "Anthropic API key not configured. Add ANTHROPIC_API_KEY to your Replit Secrets to enable roasting. Get a key at console.anthropic.com.",
+        "Gemini API key not configured. Add GEMINI_API_KEY to your Replit Secrets to enable roasting. Get a key at aistudio.google.com.",
     });
     return;
   }
 
-  const client = new Anthropic({ apiKey });
+  const ai = new GoogleGenAI({ apiKey });
 
   req.log.info({ language }, "Roasting code snippet");
 
   const userMessage = `Please roast the following ${language} code:\n\n\`\`\`${language}\n${code}\n\`\`\``;
 
-  const message = await client.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 8192,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: userMessage }],
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    config: {
+      systemInstruction: SYSTEM_PROMPT,
+      maxOutputTokens: 8192,
+      responseMimeType: "application/json",
+    },
+    contents: [{ role: "user", parts: [{ text: userMessage }] }],
   });
 
-  // Extract text content from response
-  const textBlock = message.content.find((b) => b.type === "text");
-  if (!textBlock || textBlock.type !== "text") {
-    req.log.error("No text block in Anthropic response");
-    res.status(500).json({ error: "LLM returned an unexpected response." });
-    return;
-  }
+  const rawText = response.text ?? "";
 
   // Parse JSON from LLM output
   let parsed_result: unknown;
   try {
-    parsed_result = JSON.parse(textBlock.text.trim());
+    parsed_result = JSON.parse(rawText.trim());
   } catch {
-    req.log.error({ raw: textBlock.text }, "Failed to parse LLM JSON");
+    req.log.error({ raw: rawText }, "Failed to parse LLM JSON");
     res.status(500).json({ error: "LLM returned malformed JSON." });
     return;
   }
