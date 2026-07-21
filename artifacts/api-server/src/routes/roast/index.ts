@@ -1,10 +1,10 @@
 /**
  * POST /roast
- * Accepts a code snippet and language, calls the Gemini API,
+ * Accepts a code snippet and language, calls the Groq API,
  * and returns a structured roast result.
  */
 import { Router, type IRouter } from "express";
-import { GoogleGenAI } from "@google/genai";
+import Groq from "groq-sdk";
 import { RoastCodeBody, RoastCodeResponse } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -46,16 +46,16 @@ router.post("/roast", async (req, res): Promise<void> => {
     return;
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
     res.status(503).json({
       error:
-        "Gemini API key not configured. Add GEMINI_API_KEY to your Replit Secrets. Get a key at aistudio.google.com.",
+        "Groq API key not configured. Add GROQ_API_KEY to your Replit Secrets. Get a free key at console.groq.com.",
     });
     return;
   }
 
-  const ai = new GoogleGenAI({ apiKey });
+  const groq = new Groq({ apiKey });
 
   req.log.info({ language }, "Roasting code snippet");
 
@@ -63,28 +63,34 @@ router.post("/roast", async (req, res): Promise<void> => {
 
   let rawText: string;
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
-      config: {
-        systemInstruction: SYSTEM_PROMPT,
-        maxOutputTokens: 8192,
-        responseMimeType: "application/json",
-      },
-      contents: [{ role: "user", parts: [{ text: userMessage }] }],
+    const completion = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: userMessage },
+      ],
+      max_tokens: 8192,
+      response_format: { type: "json_object" },
     });
-    rawText = response.text ?? "";
+    rawText = completion.choices[0]?.message?.content ?? "";
   } catch (err: any) {
-    const status = err?.status ?? err?.code;
-    if (status === 429 || String(err?.message).includes("RESOURCE_EXHAUSTED")) {
-      req.log.warn("Gemini quota exhausted");
+    const status = err?.status ?? err?.statusCode;
+    if (status === 429) {
+      req.log.warn("Groq rate limit hit");
       res.status(429).json({
-        error:
-          "Your Gemini API key has hit its free-tier quota limit. Enable billing on your Google AI project at aistudio.google.com to continue.",
+        error: "Groq rate limit reached. Wait a moment and try again.",
       });
       return;
     }
-    req.log.error({ err }, "Gemini API error");
-    res.status(502).json({ error: "Gemini API returned an error. Try again shortly." });
+    if (status === 401) {
+      req.log.warn("Groq auth error");
+      res.status(401).json({
+        error: "Invalid Groq API key. Check your GROQ_API_KEY secret.",
+      });
+      return;
+    }
+    req.log.error({ err }, "Groq API error");
+    res.status(502).json({ error: "Groq API returned an error. Try again shortly." });
     return;
   }
 
