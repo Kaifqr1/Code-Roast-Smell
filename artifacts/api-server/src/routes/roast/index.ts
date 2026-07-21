@@ -65,7 +65,7 @@ router.post("/roast", async (req, res): Promise<void> => {
   const userMessage = `Please roast the following ${language} code:\n\n\`\`\`${language}\n${code}\n\`\`\``;
 
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
+    model: "gemini-2.0-flash",
     config: {
       systemInstruction: SYSTEM_PROMPT,
       maxOutputTokens: 8192,
