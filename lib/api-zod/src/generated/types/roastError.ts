@@ -6,7 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export * from './healthStatus';
-export * from './roastError';
-export * from './roastInput';
-export * from './roastResult';
+export interface RoastError {
+  error: string;
+}

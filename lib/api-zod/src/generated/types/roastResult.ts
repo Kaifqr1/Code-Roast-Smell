@@ -5,19 +5,6 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-export interface HealthStatus {
-  status: string;
-}
-
-export interface RoastInput {
-  /**
-     * The code snippet to roast
-     * @minLength 1
-     */
-  code: string;
-  /** Programming language of the snippet (e.g. JavaScript, Python) */
-  language: string;
-}
 
 export interface RoastResult {
   /** Witty roast of the code (1-3 sentences) */
@@ -31,8 +18,3 @@ export interface RoastResult {
   /** Short encouraging closing line */
   encouragement: string;
 }
-
-export interface RoastError {
-  error: string;
-}
-
