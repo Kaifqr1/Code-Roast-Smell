@@ -18,31 +18,37 @@ const smellRatings = {
     emoji: "🍞",
     colors: "text-emerald-400 border-emerald-400/20 bg-emerald-400/10",
     glow: "shadow-[0_0_40px_rgba(52,211,153,0.08)]",
+    bg: "bg-emerald-400/5",
   },
   "Slightly Burnt": {
     emoji: "🥖",
     colors: "text-amber-400 border-amber-400/20 bg-amber-400/10",
     glow: "shadow-[0_0_40px_rgba(251,191,36,0.08)]",
+    bg: "bg-amber-400/5",
   },
   "Getting Toasty": {
     emoji: "🔥",
     colors: "text-orange-400 border-orange-400/20 bg-orange-400/10",
     glow: "shadow-[0_0_40px_rgba(251,146,60,0.08)]",
+    bg: "bg-orange-400/5",
   },
   Spaghetti: {
     emoji: "🍝",
     colors: "text-red-400 border-red-400/20 bg-red-400/10",
     glow: "shadow-[0_0_40px_rgba(248,113,113,0.08)]",
+    bg: "bg-red-400/5",
   },
   "Burnt Toast": {
     emoji: "🍞💀",
     colors: "text-rose-500 border-rose-500/20 bg-rose-500/10",
     glow: "shadow-[0_0_40px_rgba(244,63,94,0.08)]",
+    bg: "bg-rose-500/5",
   },
   "Radioactive Waste": {
     emoji: "☢️",
     colors: "text-fuchsia-400 border-fuchsia-400/20 bg-fuchsia-400/10",
     glow: "shadow-[0_0_40px_rgba(232,121,249,0.08)]",
+    bg: "bg-fuchsia-400/5",
   },
 };
 
