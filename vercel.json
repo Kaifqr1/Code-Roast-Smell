@@ -1,7 +1,7 @@
 {
   "installCommand": "pnpm install --no-frozen-lockfile",
   "buildCommand": "pnpm --filter @workspace/code-roast run build",
-  "outputDirectory": "artifacts/code-roast/dist/public",
+  "outputDirectory": "dist/public",
   "framework": null,
   "functions": {
     "api/roast.ts": {
@@ -9,6 +9,9 @@
     }
   },
   "rewrites": [
-    { "source": "/api/roast", "destination": "/api/roast" }
+    {
+      "source": "/api/roast",
+      "destination": "/api/roast"
+    }
   ]
 }
