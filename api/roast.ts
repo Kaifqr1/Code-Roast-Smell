@@ -1,8 +1,3 @@
-/**
- * Vercel Serverless Function — POST /api/roast
- * Automatically routed by Vercel from the /api directory.
- * Set GROQ_API_KEY in your Vercel project environment variables.
- */
 import Groq from "groq-sdk";
 import { z } from "zod";
 
