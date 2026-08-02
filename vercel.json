@@ -7,11 +7,5 @@
     "api/roast.ts": {
       "maxDuration": 30
     }
-  },
-  "rewrites": [
-    {
-      "source": "/api/roast",
-      "destination": "/api/roast"
-    }
-  ]
+  }
 }
